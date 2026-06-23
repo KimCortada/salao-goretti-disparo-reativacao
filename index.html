@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Disparo de Reativação — Salão Goretti Miranda</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f0f4;
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #6b2d5e;
+      margin-bottom: 4px;
+    }
+
+    header p {
+      font-size: 13px;
+      color: #888;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ede0ea;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #3a1a30;
+      margin-bottom: 1rem;
+    }
+
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #f3e6f0;
+      color: #6b2d5e;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .drop-zone {
+      border: 2px dashed #d4a8c7;
+      border-radius: 10px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.15s;
+      color: #999;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover { background: #fdf6fb; }
+
+    .drop-zone svg { display: block; margin: 0 auto 10px; color: #c48ab0; }
+
+    .drop-label { font-size: 14px; color: #555; }
+    .drop-sub { font-size: 12px; color: #aaa; margin-top: 4px; }
+
+    .name-toggle { display: flex; gap: 8px; margin-top: 12px; }
+
+    .toggle-btn {
+      font-size: 12px;
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1px solid #ddd;
+      background: transparent;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .toggle-btn.active {
+      background: #f3e6f0;
+      border-color: #b06090;
+      color: #6b2d5e;
+      font-weight: 500;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 1rem;
+    }
+
+    .stat {
+      background: #fdf6fb;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+    }
+
+    .stat-label { font-size: 11px; color: #999; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .stat-value { font-size: 20px; font-weight: 600; color: #3a1a30; }
+    .stat-value.small { font-size: 13px; padding-top: 3px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; font-weight: 500; color: #999; font-size: 11px; padding: 6px 8px; border-bottom: 1px solid #f0e6ed; text-transform: uppercase; letter-spacing: 0.04em; }
+    td { padding: 7px 8px; border-bottom: 1px solid #f7f0f5; color: #333; }
+    tr:last-child td { border-bottom: none; }
+
+    .section-label { font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+
+    .msg-proposal {
+      border: 1px solid #ede0ea;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+
+    .msg-proposal.selected { border-color: #b06090; }
+
+    .msg-proposal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: #fdf6fb;
+    }
+
+    .msg-proposal-label { font-size: 12px; font-weight: 600; color: #6b2d5e; }
+
+    .proposal-actions { display: flex; gap: 8px; align-items: center; }
+
+    .btn-recriar {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px solid #d4a8c7;
+      color: #6b2d5e;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.15s;
+    }
+
+    .btn-recriar:hover { background: #f3e6f0; }
+    .btn-recriar:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-usar {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: transparent;
+      border: 1px solid #ddd;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-usar.selected {
+      background: #f3e6f0;
+      border-color: #b06090;
+      color: #6b2d5e;
+      font-weight: 500;
+    }
+
+    textarea.msg-text {
+      width: 100%;
+      min-height: 90px;
+      resize: vertical;
+      font-size: 13px;
+      font-family: inherit;
+      color: #333;
+      background: #fff;
+      border: none;
+      border-top: 1px solid #f0e6ed;
+      padding: 10px 12px;
+      line-height: 1.65;
+      outline: none;
+    }
+
+    .vars { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+    .var-chip {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: #f3e6f0;
+      color: #6b2d5e;
+      border: 1px solid #d4a8c7;
+      cursor: pointer;
+      font-family: monospace;
+    }
+
+    .var-chip:hover { background: #ead0e4; }
+
+    input.webhook-input {
+      width: 100%;
+      font-size: 13px;
+      padding: 9px 12px;
+      font-family: monospace;
+      color: #333;
+      background: #fdf6fb;
+      border: 1px solid #ede0ea;
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input.webhook-input:focus { border-color: #b06090; }
+
+    .hint { font-size: 12px; color: #aaa; margin-top: 6px; }
+
+    .btn-fire {
+      background: #6b2d5e;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 28px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+
+    .btn-fire:hover { background: #541f4a; }
+    .btn-fire:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .progress-bar-bg { background: #f0e6ed; border-radius: 99px; height: 8px; overflow: hidden; margin: 8px 0; }
+    .progress-bar { height: 8px; border-radius: 99px; background: #b06090; transition: width 0.3s; }
+
+    .log-box {
+      font-size: 12px;
+      font-family: monospace;
+      color: #888;
+      max-height: 130px;
+      overflow-y: auto;
+      background: #fdf6fb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      line-height: 1.8;
+      margin-top: 8px;
+    }
+
+    .ok { color: #2d7a4f; font-weight: 600; }
+    .err { color: #a03030; font-weight: 600; }
+
+    .spinner {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border: 2px solid #d4a8c7;
+      border-top-color: #6b2d5e;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #hidden-input { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <h1>✦ Salão Goretti Miranda</h1>
+      <p>Disparo de reativação de clientes</p>
+    </header>
+
+    <!-- PASSO 1 -->
+    <div class="card">
+      <div class="card-header"><span class="step-num">1</span> Carregar planilha</div>
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('hidden-input').click()">
+        <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+        </svg>
+        <div class="drop-label" id="drop-label">Clique ou arraste o arquivo .xlsx aqui</div>
+        <div class="drop-sub" id="drop-sub">Exportado do Trinks, SimplyBook ou qualquer sistema</div>
+      </div>
+      <input type="file" id="hidden-input" accept=".xlsx,.xls,.csv">
+
+      <div style="margin-top:14px">
+        <div class="section-label">Nome da cliente nas mensagens</div>
+        <div class="name-toggle">
+          <button class="toggle-btn active" id="btn-primeiro" onclick="setNameMode('primeiro')">Apenas o primeiro nome</button>
+          <button class="toggle-btn" id="btn-completo" onclick="setNameMode('completo')">Nome completo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASSO 2 -->
+    <div class="card" id="preview-card" style="display:none">
+      <div class="card-header"><span class="step-num">2</span> Prévia dos dados</div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-label">Clientes</div><div class="stat-value" id="stat-total">0</div></div>
+        <div class="stat"><div class="stat-label">Com telefone</div><div class="stat-value" id="stat-tel">0</div></div>
+        <div class="stat"><div class="stat-label">Serviço</div><div class="stat-value small" id="stat-service">—</div></div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Nome</th><th>Último atend.</th><th>Telefone</th></tr></thead>
+          <tbody id="preview-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PASSO 3 -->
+    <div class="card" id="msg-card" style="display:none">
+      <div class="card-header"><span class="step-num">3</span> Mensagens de reativação</div>
+      <p style="font-size:13px; color:#999; margin-bottom:1rem">Selecione uma proposta. Clique em "Recriar" para gerar uma nova sugestão com IA para o serviço detectado.</p>
+      <div id="proposals-container"></div>
+      <div style="margin-top:10px">
+        <div class="section-label">Variáveis disponíveis</div>
+        <div class="vars">
+          <span class="var-chip" onclick="insertVar('{{nome}}')">{{nome}}</span>
+          <span class="var-chip" onclick="insertVar('{{servico}}')">{{servico}}</span>
+          <span class="var-chip" onclick="insertVar('{{ultimo_atendimento}}')">{{ultimo_atendimento}}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASSO 4 -->
+    <div class="card" id="webhook-card" style="display:none">
+      <div class="card-header"><span class="step-num">4</span> Webhook do Make.com</div>
+      <div class="section-label">URL do cenário Make.com</div>
+      <input class="webhook-input" id="webhook-url" type="text" placeholder="https://hook.make.com/xxxxxxxxxxxxxxxxxxxx" />
+      <p class="hint">Cole aqui a URL do webhook do seu cenário Make.com.</p>
+    </div>
+
+    <!-- DISPARAR -->
+    <div id="fire-section" style="display:none; margin-top:0.5rem; margin-bottom:1rem">
+      <button class="btn-fire" id="btn-fire" onclick="startDisparo()">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
+        Disparar mensagens
+      </button>
+    </div>
+
+    <!-- PROGRESSO -->
+    <div class="card" id="progress-card" style="display:none">
+      <div class="card-header"><span class="step-num" style="background:#e6f4ee;color:#2d7a4f">✓</span> Progresso do disparo</div>
+      <div style="display:flex; justify-content:space-between; font-size:13px; color:#999; margin-bottom:4px">
+        <span id="prog-label">Iniciando...</span>
+        <span id="prog-count">0 / 0</span>
+      </div>
+      <div class="progress-bar-bg"><div class="progress-bar" id="prog-bar" style="width:0%"></div></div>
+      <div class="log-box" id="log-box"></div>
+    </div>
+
+  </div>
+
+  <script>
+    let clients = [];
+    let serviceName = '';
+    let nameMode = 'primeiro';
+    let selectedProposal = 0;
+    let proposals = ['', '', ''];
+
+    const estilos = [
+      'afetiva e próxima, como uma amiga do salão',
+      'com oferta direta e senso de urgência leve',
+      'curiosidade com um dado educativo sobre o serviço'
+    ];
+
+    const labels = ['Proposta 1 — Afetiva', 'Proposta 2 — Oferta direta', 'Proposta 3 — Curiosidade'];
+
+    function capitalize(str) {
+      if (!str) return '';
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function capitalizeSentences(text) {
+      return text.split(/([.!?]\s+)/).map((p, i) => i % 2 === 0 ? capitalize(p) : p).join('');
+    }
+
+    function setNameMode(mode) {
+      nameMode = mode;
+      document.getElementById('btn-primeiro').className = 'toggle-btn' + (mode === 'primeiro' ? ' active' : '');
+      document.getElementById('btn-completo').className = 'toggle-btn' + (mode === 'completo' ? ' active' : '');
+    }
+
+    function formatName(fullName) {
+      if (!fullName) return '';
+      const name = nameMode === 'primeiro' ? fullName.trim().split(' ')[0] : fullName.trim();
+      return capitalize(name);
+    }
+
+    function getDefaultProposals(servico) {
+      return [
+        `Oi {{nome}}! 😊 Aqui é o Salão Goretti Miranda. Saudade de você por aqui! Faz um tempinho que você não faz seu ${servico} com a gente. Que tal a gente marcar um horário essa semana? Temos uma condição especial esperando por você! 💅`,
+        `Olá, {{nome}}! Temos uma oferta exclusiva para você: *10% de desconto* no seu próximo ${servico} no Salão Goretti Miranda. Válido por tempo limitado. Quer aproveitar? É só responder aqui e a gente agenda! 🎁`,
+        `{{nome}}, você sabia que o ${servico} precisa de manutenção a cada 3 semanas para ficar perfeito? 💅 Aqui no Salão Goretti Miranda estamos com agenda aberta essa semana. Quer garantir o seu horário?`
+      ];
+    }
+
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+    document.getElementById('hidden-input').addEventListener('change', e => handleFile(e.target.files[0]));
+
+    function handleFile(file) {
+      if (!file) return;
+      document.getElementById('drop-label').textContent = file.name;
+      document.getElementById('drop-sub').textContent = 'Arquivo carregado com sucesso ✓';
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const raw = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        parseSheet(raw);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function parseSheet(rows) {
+      clients = [];
+      serviceName = '';
+      let headerRow = -1;
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r || !r.length) continue;
+        const joined = r.join(' ').toLowerCase();
+        if (joined.includes('servi') && joined.includes('filtrado')) {
+          const cell = r.join(' ');
+          const m = cell.match(/filtrado[:\s]+(.+)/i);
+          if (m) serviceName = m[1].replace(/R\$[\s\d,.]+/g, '').replace(/\s+/g, ' ').trim();
+        }
+        if (joined.includes('nome') && (joined.includes('contato') || joined.includes('telefone'))) {
+          headerRow = i; break;
+        }
+      }
+      if (headerRow === -1) { alert('Cabeçalho não encontrado. Verifique as colunas da planilha.'); return; }
+      const headers = rows[headerRow].map(h => h ? h.toString().toLowerCase().trim() : '');
+      const iNome = headers.findIndex(h => h.includes('nome'));
+      const iData = headers.findIndex(h => h.includes('atendimento') || h.includes('data'));
+      const iTel = headers.findIndex(h => h.includes('contato') || h.includes('telefone') || h.includes('tel'));
+      for (let i = headerRow + 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r || !r[iNome]) continue;
+        const nome = r[iNome].toString().trim();
+        let data = r[iData] ? r[iData].toString().trim() : '';
+        if (!isNaN(data) && data.length > 3) {
+          const d = new Date(Math.round((parseFloat(data) - 25569) * 86400 * 1000));
+          data = d.toLocaleDateString('pt-BR');
+        }
+        const tel = r[iTel] ? r[iTel].toString().trim() : '';
+        if (nome) clients.push({ nome, data, tel });
+      }
+      const comTel = clients.filter(c => c.tel && c.tel.length > 5).length;
+      document.getElementById('stat-total').textContent = clients.length;
+      document.getElementById('stat-tel').textContent = comTel;
+      document.getElementById('stat-service').textContent = serviceName || 'Detectado';
+      const tbody = document.getElementById('preview-body');
+      tbody.innerHTML = '';
+      clients.slice(0, 5).forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${capitalize(c.nome)}</td><td>${c.data}</td><td>${c.tel}</td>`;
+        tbody.appendChild(tr);
+      });
+      if (clients.length > 5) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="3" style="color:#bbb;font-size:12px">... e mais ${clients.length - 5} clientes</td>`;
+        tbody.appendChild(tr);
+      }
+      proposals = getDefaultProposals(serviceName || 'serviço');
+      renderProposals();
+      ['preview-card', 'msg-card', 'webhook-card', 'fire-section'].forEach(id => {
+        document.getElementById(id).style.display = '';
+      });
+    }
+
+    function renderProposals() {
+      const container = document.getElementById('proposals-container');
+      container.innerHTML = '';
+      proposals.forEach((text, i) => {
+        const isSelected = i === selectedProposal;
+        const div = document.createElement('div');
+        div.className = 'msg-proposal' + (isSelected ? ' selected' : '');
+        div.innerHTML = `
+          <div class="msg-proposal-header">
+            <span class="msg-proposal-label">${labels[i]}</span>
+            <div class="proposal-actions">
+              <button class="btn-recriar" id="btn-recriar-${i}" onclick="recriarProposta(${i})">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                Recriar
+              </button>
+              <button class="btn-usar ${isSelected ? 'selected' : ''}" onclick="selectProposal(${i})">
+                ${isSelected ? '✓ Selecionada' : 'Usar esta'}
+              </button>
+            </div>
+          </div>
+          <textarea class="msg-text" id="ta-${i}">${text}</textarea>
+        `;
+        container.appendChild(div);
+        document.getElementById('ta-' + i).addEventListener('input', function () {
+          proposals[i] = this.value;
+        });
+      });
+    }
+
+    function selectProposal(i) {
+      selectedProposal = i;
+      renderProposals();
+    }
+
+    function insertVar(v) {
+      const ta = document.getElementById('ta-' + selectedProposal);
+      if (!ta) return;
+      const pos = ta.selectionStart !== undefined ? ta.selectionStart : ta.value.length;
+      ta.value = ta.value.slice(0, pos) + v + ta.value.slice(pos);
+      proposals[selectedProposal] = ta.value;
+    }
+
+    async function recriarProposta(i) {
+      const btn = document.getElementById('btn-recriar-' + i);
+      const ta = document.getElementById('ta-' + i);
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Criando...';
+
+      try {
+        const res = await fetch('/.netlify/functions/gerar-mensagem', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ servico: serviceName || 'serviço de beleza', estilo: estilos[i] })
+        });
+        const data = await res.json();
+        if (data.mensagem) {
+          proposals[i] = capitalizeSentences(data.mensagem);
+          ta.value = proposals[i];
+        } else {
+          ta.value = 'Não foi possível gerar. Tente novamente.';
+        }
+      } catch (err) {
+        ta.value = 'Erro de conexão. Verifique se o site está publicado no Netlify.';
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg> Recriar`;
+    }
+
+    async function startDisparo() {
+      const webhookUrl = document.getElementById('webhook-url').value.trim();
+      if (!webhookUrl) { alert('Cole a URL do webhook do Make.com antes de disparar.'); return; }
+      if (!clients.length) { alert('Carregue uma planilha primeiro.'); return; }
+      const msgTemplate = proposals[selectedProposal];
+      const btn = document.getElementById('btn-fire');
+      btn.disabled = true;
+      document.getElementById('progress-card').style.display = '';
+      const logBox = document.getElementById('log-box');
+      const progBar = document.getElementById('prog-bar');
+      const progCount = document.getElementById('prog-count');
+      const progLabel = document.getElementById('prog-label');
+      let ok = 0, err = 0;
+      const total = clients.length;
+      for (let i = 0; i < clients.length; i++) {
+        const c = clients[i];
+        const nomeFormatado = formatName(c.nome);
+        const msg = capitalizeSentences(
+          msgTemplate
+            .replace(/\{\{nome\}\}/g, nomeFormatado)
+            .replace(/\{\{servico\}\}/g, serviceName || 'serviço')
+            .replace(/\{\{ultimo_atendimento\}\}/g, c.data)
+        );
+        const payload = { nome: nomeFormatado, telefone: c.tel, ultimo_atendimento: c.data, servico: serviceName, mensagem: msg };
+        try {
+          await fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), mode: 'no-cors' });
+          ok++;
+          logBox.innerHTML += `<div><span class="ok">✓</span> ${nomeFormatado} — ${c.tel}</div>`;
+        } catch (e) {
+          err++;
+          logBox.innerHTML += `<div><span class="err">✗</span> ${nomeFormatado} — erro</div>`;
+        }
+        logBox.scrollTop = logBox.scrollHeight;
+        progBar.style.width = Math.round(((i + 1) / total) * 100) + '%';
+        progCount.textContent = `${i + 1} / ${total}`;
+        progLabel.textContent = i + 1 < total ? 'Enviando...' : 'Concluído!';
+        await new Promise(r => setTimeout(r, 350));
+      }
+      progLabel.textContent = `Concluído — ${ok} enviados${err > 0 ? ', ' + err + ' erros' : ''}`;
+      btn.disabled = false;
+    }
+  </script>
+</body>
+</html>
